@@ -1,0 +1,16 @@
+{
+  "name": "mein-crawler",
+  "version": "1.0.0",
+  "description": "Ein einfacher Web Crawler mit Crawlee",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "node src/main.js",
+    "dev": "node src/main.js"
+  },
+  "dependencies": {
+    "crawlee": "^3.7.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
