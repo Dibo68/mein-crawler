@@ -1,25 +1,23 @@
 import { CheerioCrawler } from 'crawlee';
+import http from 'http';
 
-// Erstelle einen einfachen Crawler
-const crawler = new CheerioCrawler({
-    // Maximal 2 Seiten crawlen (für den Test)
-    maxRequestsPerCrawl: 2,
-    
-    // Was soll mit jeder gefundenen Seite passieren?
-    async requestHandler({ $, request, log }) {
-        const title = $('title').text();
-        log.info(`Titel gefunden: ${title}`, { url: request.loadedUrl });
-        
-        // Speichere die Daten
-        await crawler.exportData([{
-            url: request.loadedUrl,
-            title: title,
-            timestamp: new Date().toISOString()
-        }]);
-    },
+console.log('🚀 Crawler-Server startet...');
+
+// HTTP Server für Gesundheitschecks
+const server = http.createServer((req, res) => {
+    if (req.url === '/health') {
+        res.writeHead(200, { 'Content-Type': 'text/plain' });
+        res.end('OK');
+    } else {
+        res.writeHead(200, { 'Content-Type': 'text/html' });
+        res.end(`
+            <h1>Mein Crawler läuft!</h1>
+            <p>Der Crawler ist bereit und wartet auf Aufträge.</p>
+            <p>Aufruf: <a href="/crawl">/crawl</a> um zu crawlen</p>
+        `);
+    }
 });
 
-// Starte den Crawler
-console.log('🚀 Crawler startet...');
-await crawler.run(['https://example.com']);
-console.log('✅ Crawler fertig!');
+server.listen(3000, () => {
+    console.log('✅ Server läuft auf Port 3000');
+});
