@@ -12,11 +12,7 @@ app.get('/', (req, res) => {
 });
 
 app.get('/crawl', async (req, res) => {
-    // NEU: Lese den 'url' Parameter aus der Anfrage.
-    // Falls kein Parameter übergeben wird, nutze 'https://example.com' als Standard.
     const urlToCrawl = req.query.url || 'https://example.com';
-
-    // Log-Ausgabe auf dem Server zur Fehlerbehebung
     console.log(`Versuche zu crawlen: ${urlToCrawl}`);
 
     try {
@@ -26,20 +22,28 @@ app.get('/crawl', async (req, res) => {
         });
         
         const page = await browser.newPage();
-        
-        // NEU: Nutze die dynamische URL aus der Anfrage
         await page.goto(urlToCrawl); 
         
         const title = await page.title();
+
+        // NEU: Extrahiere den gesamten Textinhalt der Seite
+        const content = await page.evaluate(() => {
+            // Wir nehmen den Text aus dem body-Tag. Du könntest das auch spezifischer machen,
+            // z.B. mit document.querySelector('#main-content').innerText, wenn du nur
+            // einen bestimmten Teil der Seite willst.
+            return document.body.innerText;
+        });
         
         await browser.close();
         
-        // NEU: Gib die tatsächlich gecrawlte URL im Ergebnis zurück
+        // NEU: Füge den Inhalt (content) zur JSON-Antwort hinzu
         res.json({ 
             success: true, 
             title: title,
-            url: urlToCrawl 
+            url: urlToCrawl,
+            content: content // Hier ist der extrahierte Text
         });
+
     } catch (error) {
         console.error(`Fehler beim Crawlen von ${urlToCrawl}:`, error);
         res.status(500).json({ 
