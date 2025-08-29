@@ -18,35 +18,41 @@ app.get('/crawl', async (req, res) => {
     }
 
     console.log(`Versuche zu crawlen: ${urlToCrawl}`);
+    let browser; // Definiere den Browser außerhalb des try-Blocks
 
     try {
-        const browser = await puppeteer.launch({
+        browser = await puppeteer.launch({
             headless: true,
             args: [
-                '--no-sandbox', 
+                '--no-sandbox',
                 '--disable-setuid-sandbox',
-                '--disable-extensions' // <-- DIESE ZEILE HINZUFÜGEN
+                '--disable-extensions'
             ]
         });
         
         const page = await browser.newPage();
+
+        // --- NEUE TARNUNGS-EINSTELLUNGEN ---
+        
+        // 1. Setze einen realistischen User-Agent
+        await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36');
+
+        // 2. Setze eine typische Browser-Fenstergröße (Viewport)
+        await page.setViewport({ width: 1920, height: 1080 });
+
+        // --- ENDE DER TARNUNGS-EINSTELLUNGEN ---
+        
         await page.goto(urlToCrawl, { waitUntil: 'networkidle2' });
         
         const title = await page.title();
-
-        // Extrahiere den gesamten Textinhalt der Seite
         const content = await page.evaluate(() => document.body.innerText);
-
-        // NEU: Extrahiere alle Links von der Seite
         const links = await page.evaluate((baseUrl) => {
-            // Finde alle <a>-Tags
             const anchors = Array.from(document.querySelectorAll('a'));
             return anchors.map(anchor => ({
-                text: anchor.innerText.trim(), // Der sichtbare Text des Links
-                // Wandle relative URLs (z.B. /impressum) in absolute URLs um
+                text: anchor.innerText.trim(),
                 href: new URL(anchor.getAttribute('href'), baseUrl).href
             }));
-        }, urlToCrawl); // Übergib die Basis-URL für die Umwandlung
+        }, urlToCrawl);
         
         await browser.close();
         
@@ -55,11 +61,14 @@ app.get('/crawl', async (req, res) => {
             title: title,
             url: urlToCrawl,
             content: content,
-            links: links // Füge die gefundene Link-Liste zur Antwort hinzu
+            links: links
         });
 
     } catch (error) {
         console.error(`Fehler beim Crawlen von ${urlToCrawl}:`, error);
+        if (browser) {
+            await browser.close(); // Stelle sicher, dass der Browser auch bei Fehlern geschlossen wird
+        }
         res.status(500).json({ 
             success: false, 
             error: error.message,
