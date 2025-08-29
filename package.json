@@ -1,16 +1,13 @@
 {
   "name": "mein-crawler",
   "version": "1.0.0",
-  "description": "Ein einfacher Web Crawler mit Crawlee",
   "main": "src/main.js",
+  "type": "module",
   "scripts": {
-    "start": "node src/main.js",
-    "dev": "node src/main.js"
+    "start": "node src/main.js"
   },
   "dependencies": {
-    "crawlee": "^3.7.0"
-  },
-  "engines": {
-    "node": ">=18.0.0"
+    "puppeteer": "latest",
+    "express": "latest"
   }
 }
