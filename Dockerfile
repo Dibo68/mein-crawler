@@ -1,13 +1,14 @@
-FROM node:18-alpine
+FROM ghcr.io/puppeteer/puppeteer:latest
 
+USER root
 WORKDIR /app
 
 COPY package*.json ./
-
 RUN npm install
 
 COPY . .
 
+USER pptruser
 EXPOSE 3000
 
 CMD ["npm", "start"]
