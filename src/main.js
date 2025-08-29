@@ -1,23 +1,39 @@
-import { CheerioCrawler } from 'crawlee';
-import http from 'http';
+import puppeteer from 'puppeteer';
+import express from 'express';
 
-console.log('🚀 Crawler-Server startet...');
+const app = express();
+const port = 3000;
 
-// HTTP Server für Gesundheitschecks
-const server = http.createServer((req, res) => {
-    if (req.url === '/health') {
-        res.writeHead(200, { 'Content-Type': 'text/plain' });
-        res.end('OK');
-    } else {
-        res.writeHead(200, { 'Content-Type': 'text/html' });
-        res.end(`
-            <h1>Mein Crawler läuft!</h1>
-            <p>Der Crawler ist bereit und wartet auf Aufträge.</p>
-            <p>Aufruf: <a href="/crawl">/crawl</a> um zu crawlen</p>
-        `);
+app.get('/', (req, res) => {
+    res.send(`
+        <h1>Puppeteer Crawler läuft!</h1>
+        <p><a href="/crawl">Crawl starten</a></p>
+    `);
+});
+
+app.get('/crawl', async (req, res) => {
+    try {
+        const browser = await puppeteer.launch({
+            headless: true,
+            args: ['--no-sandbox', '--disable-setuid-sandbox']
+        });
+        
+        const page = await browser.newPage();
+        await page.goto('https://example.com');
+        const title = await page.title();
+        
+        await browser.close();
+        
+        res.json({ 
+            success: true, 
+            title: title,
+            url: 'https://example.com'
+        });
+    } catch (error) {
+        res.json({ success: false, error: error.message });
     }
 });
 
-server.listen(3000, () => {
-    console.log('✅ Server läuft auf Port 3000');
+app.listen(port, () => {
+    console.log(`Server läuft auf Port ${port}`);
 });
