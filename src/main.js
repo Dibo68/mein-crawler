@@ -7,12 +7,16 @@ const port = 3000;
 app.get('/', (req, res) => {
     res.send(`
         <h1>Puppeteer Crawler läuft!</h1>
-        <p><a href="/crawl">Crawl starten</a> (nutzt example.com als Standard)</p>
+        <p><a href="/crawl?url=https://example.com">Crawl starten</a></p>
     `);
 });
 
 app.get('/crawl', async (req, res) => {
-    const urlToCrawl = req.query.url || 'https://example.com';
+    const urlToCrawl = req.query.url;
+    if (!urlToCrawl) {
+        return res.status(400).json({ success: false, error: 'Keine URL übergeben.' });
+    }
+
     console.log(`Versuche zu crawlen: ${urlToCrawl}`);
 
     try {
@@ -22,26 +26,32 @@ app.get('/crawl', async (req, res) => {
         });
         
         const page = await browser.newPage();
-        await page.goto(urlToCrawl); 
+        await page.goto(urlToCrawl, { waitUntil: 'networkidle2' });
         
         const title = await page.title();
 
-        // NEU: Extrahiere den gesamten Textinhalt der Seite
-        const content = await page.evaluate(() => {
-            // Wir nehmen den Text aus dem body-Tag. Du könntest das auch spezifischer machen,
-            // z.B. mit document.querySelector('#main-content').innerText, wenn du nur
-            // einen bestimmten Teil der Seite willst.
-            return document.body.innerText;
-        });
+        // Extrahiere den gesamten Textinhalt der Seite
+        const content = await page.evaluate(() => document.body.innerText);
+
+        // NEU: Extrahiere alle Links von der Seite
+        const links = await page.evaluate((baseUrl) => {
+            // Finde alle <a>-Tags
+            const anchors = Array.from(document.querySelectorAll('a'));
+            return anchors.map(anchor => ({
+                text: anchor.innerText.trim(), // Der sichtbare Text des Links
+                // Wandle relative URLs (z.B. /impressum) in absolute URLs um
+                href: new URL(anchor.getAttribute('href'), baseUrl).href
+            }));
+        }, urlToCrawl); // Übergib die Basis-URL für die Umwandlung
         
         await browser.close();
         
-        // NEU: Füge den Inhalt (content) zur JSON-Antwort hinzu
         res.json({ 
             success: true, 
             title: title,
             url: urlToCrawl,
-            content: content // Hier ist der extrahierte Text
+            content: content,
+            links: links // Füge die gefundene Link-Liste zur Antwort hinzu
         });
 
     } catch (error) {
