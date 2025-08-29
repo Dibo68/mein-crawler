@@ -22,7 +22,11 @@ app.get('/crawl', async (req, res) => {
     try {
         const browser = await puppeteer.launch({
             headless: true,
-            args: ['--no-sandbox', '--disable-setuid-sandbox']
+            args: [
+                '--no-sandbox', 
+                '--disable-setuid-sandbox',
+                '--disable-extensions' // <-- DIESE ZEILE HINZUFÜGEN
+            ]
         });
         
         const page = await browser.newPage();
